@@ -1,0 +1,13 @@
+# Salesforce CLI のローカル設定・認証キャッシュ（コミットしない）
+.sf/
+.sfdx/
+.localdevserver/
+# 依存パッケージ・生成物
+node_modules/
+coverage/
+code-analyzer-results-*
+# 秘密情報
+.env
+.env.*
+*.key
+authurl*.txt
