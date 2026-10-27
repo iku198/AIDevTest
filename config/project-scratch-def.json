@@ -1,0 +1,12 @@
+{
+  "orgName": "my-product 開発用",
+  "edition": "Developer",
+  "language": "ja",
+  "country": "JP",
+  "features": [],
+  "settings": {
+    "lightningExperienceSettings": {
+      "enableS1DesktopEnabled": true
+    }
+  }
+}

@@ -1,29 +1,54 @@
-# my-product
+# AIDevTest（Salesforce × Claude Code）
 
-Claude Code で AI駆動開発を行うためのサンプル本番リポジトリです。
-開発の7つのゲート（要件→設計→実装→テスト→レビュー→出荷→運用）ごとに、
-公開スキルと自作スキルを `.claude/skills/` に入れて Git で管理しています。
+Claude Code で **Salesforce 開発** を AI 駆動で行うための本番用テンプレートリポジトリです。
+Salesforce 公式スキルと、進め方のスキル、社内規約、ガードレール（安全装置）を Git で管理しています。
+
+## はじめに用意するもの
+
+| ツール | 何のため |
+|---|---|
+| [Claude Code](https://claude.com/claude-code) | AIに開発を頼むためのツール |
+| [Salesforce CLI（sf）](https://developer.salesforce.com/tools/salesforcecli) | Salesforce の組織とやり取りするためのコマンド |
+| [Node.js（LTS）](https://nodejs.org) | Salesforce の MCP サーバーと一部のスキルが使う |
+| Python 3.8 以上 | 安全装置（フック）と一部のスキルが使う |
+| Git | このリポジトリを取得・更新する |
 
 ## 使い方
 
 ```bash
-git clone <このリポジトリ>
-cd my-product
-claude          # Claude Code を起動すると .claude/skills/ のスキルが自動で読み込まれる
+git clone https://github.com/iku198/AIDevTest.git
+cd AIDevTest
+
+# 開発用の組織にログインし、別名を付ける（本番ではなく Sandbox かスクラッチ組織）
+sf org login web --alias dev-yourname --instance-url https://test.salesforce.com
+sf config set target-org dev-yourname
+
+claude    # Claude Code を起動
 ```
 
-スキルは依頼内容に合わせて自動で呼ばれます。明示したいときは `/test-driven-development` のようにスラッシュで呼べます。
+初回起動時は「このフォルダを信頼するか」と「Salesforce の MCP サーバーを使うか」を聞かれます。どちらも許可してください。
+
+あとは日本語で頼むだけです。例:「取引先に契約ランクの項目を追加して、年間売上から自動で決まるようにして」
 
 ## 構成
 
 | 場所 | 役割 |
 |---|---|
-| `CLAUDE.md` | 常に守ってほしい前提（全作業共通） |
-| `.claude/skills/` | 作業ごとの手順書（スキル） |
+| `CLAUDE.md` | AI が常に守る前提（Salesforce 専用、組織の使い分けなど） |
+| `force-app/main/default/` | Salesforce のソース（Apex、LWC、項目、フローなど） |
+| `.claude/skills/` | 作業ごとの手順書（スキル）。Salesforce 公式17件＋進め方14件＋自作2件 |
 | `.claude/skills/SOURCES.md` | 外部スキルの出所・コミット・ライセンス |
-| `.claude/settings.json` | 権限とフック（危険な操作を物理的に止める） |
-| `.claude/hooks/` | フックのスクリプト |
-| `.github/workflows/` | PRごとのセキュリティレビュー（CI） |
+| `.claude/settings.json` / `.claude/hooks/` | 安全装置。本番組織への変更や危険な git 操作を止める |
+| `.mcp.json` | Salesforce 公式の MCP サーバー設定（AI が組織を直接操作するための接続口） |
+| `.github/workflows/` | PR ごとの自動チェック（静的解析、セキュリティレビュー、デプロイ検証） |
+
+## 組織の別名ルール
+
+| 組織 | 別名 | AI が触ってよいか |
+|---|---|---|
+| スクラッチ組織 | `scratch-<名前>` | 自由に使ってよい |
+| Sandbox | `dev-<名前>` / `uat` | デプロイ・テスト OK |
+| 本番 | `prod` を含める | 検証（`--dry-run`）以外は自動で止まる |
 
 ## スキルを追加・更新するルール
 
