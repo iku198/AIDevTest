@@ -2,13 +2,16 @@
   "permissions": {
     "deny": [
       "Read(./.env)",
-      "Read(./.env.*)"
+      "Read(./.env.*)",
+      "Read(./.sf/**)",
+      "Read(./.sfdx/**)"
     ]
   },
+  "enableAllProjectMcpServers": false,
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Bash",
+        "matcher": "Bash|mcp__salesforce_dx__.*",
         "hooks": [
           {
             "type": "command",
