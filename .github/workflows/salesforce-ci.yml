@@ -1,0 +1,75 @@
+# PR ごとに Salesforce のコードを自動チェックする。
+# 1) 静的解析（Salesforce Code Analyzer）… 組織なしで常に実行
+# 2) デプロイ検証（--dry-run）＋ Apex テスト … Secrets に SF_AUTH_URL_CI があるときだけ実行
+#    SF_AUTH_URL_CI の作り方: CI用 Sandbox にログインした状態で
+#    `sf org display --target-org <別名> --verbose --json` の sfdxAuthUrl を登録する（本番の認証情報は登録しない）
+name: Salesforce CI
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    paths:
+      - "force-app/**"
+      - "sfdx-project.json"
+      - "manifest/**"
+
+jobs:
+  code-analyzer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Salesforce CLI と Code Analyzer をインストール
+        run: |
+          npm install --global @salesforce/cli
+          sf plugins install @salesforce/plugin-code-analyzer
+      - name: 静的解析を実行
+        run: |
+          sf code-analyzer run --rule-selector Recommended --target force-app \
+            --output-file code-analyzer-results.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: code-analyzer-results
+          path: code-analyzer-results.json
+
+  validate-deploy:
+    runs-on: ubuntu-latest
+    env:
+      SF_AUTH_URL_CI: ${{ secrets.SF_AUTH_URL_CI }}
+    steps:
+      - name: CI用組織の設定確認
+        id: check
+        run: |
+          if [ -z "$SF_AUTH_URL_CI" ]; then
+            echo "SF_AUTH_URL_CI が未登録のため、デプロイ検証はスキップします"
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.check.outputs.enabled == 'true'
+      - uses: actions/setup-node@v4
+        if: steps.check.outputs.enabled == 'true'
+        with:
+          node-version: "lts/*"
+      - name: CI用 Sandbox にログイン
+        if: steps.check.outputs.enabled == 'true'
+        run: |
+          npm install --global @salesforce/cli
+          echo "$SF_AUTH_URL_CI" > authurl.txt
+          sf org login sfdx-url --sfdx-url-file authurl.txt --alias ci-sandbox
+          rm -f authurl.txt
+      - name: デプロイ検証（実際には反映しない）と Apex テスト
+        if: steps.check.outputs.enabled == 'true'
+        run: |
+          sf project deploy start --dry-run --source-dir force-app \
+            --target-org ci-sandbox --test-level RunLocalTests --wait 30
