@@ -1,0 +1,25 @@
+# PR が出るたびに Claude がセキュリティ観点で差分をレビューし、PR にコメントする。
+# 事前にリポジトリの Settings → Secrets に CLAUDE_API_KEY を登録しておくこと。
+name: Security Review
+
+permissions:
+  pull-requests: write
+  contents: read
+
+on:
+  pull_request:
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 2
+
+      # 本番運用のため @main ではなくコミットを固定（2026-10-28 時点の最新）
+      - uses: anthropics/claude-code-security-review@0c6a49f1fa56a1d472575da86a94dbc1edb78eda
+        with:
+          comment-pr: true
+          claude-api-key: ${{ secrets.CLAUDE_API_KEY }}
